@@ -30,7 +30,7 @@ async function makeSeqRequest<T>(endpoint: string, params: Record<string, string
   return response.json();
 }
 
-// Helper function to format message template tokens (same as in server)
+// Helper function to format message template tokens
 function formatMessageTemplateTokens(tokens?: Record<string, unknown>[]): string {
   if (!tokens) return '';
   
@@ -51,22 +51,19 @@ async function runTests() {
     console.log(`✓ Successfully retrieved ${signals.length} signals`);
     if (signals.length > 0) {
       console.log('Sample signal:', JSON.stringify(signals[0], null, 2));
+      console.log(signals.map(s => s.Id).join(', '));
     }
     console.log();
 
-    // Test 2: Get Events (last hour)
-    console.log('Test 2: Fetching recent events...');
-    const toDate = new Date().toISOString();
-    const fromDate = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
-    
-    const events = await makeSeqRequest<any[]>('/api/events', {
-      count: '5',
-      fromDateUtc: fromDate,
-      toDateUtc: toDate
+    // Test 2: Get Events using range parameter
+    console.log('Test 2: Fetching recent events using range...');
+    const eventsWithRange = await makeSeqRequest<any[]>('/api/events', {
+      range: '1h',
+      count: '5'
     });
-    console.log(`✓ Successfully retrieved ${events.length} events`);
-    if (events.length > 0) {
-      const sampleEvent = events[0];
+    console.log(`✓ Successfully retrieved ${eventsWithRange.length} events using range`);
+    if (eventsWithRange.length > 0) {
+      const sampleEvent = eventsWithRange[0];
       console.log('Sample event:', {
         ...sampleEvent,
         messageTemplate: formatMessageTemplateTokens(sampleEvent.messageTemplateTokens),
@@ -74,17 +71,29 @@ async function runTests() {
     }
     console.log();
 
-    // Test 3: Get Events with Signal filter
+    // Test 3: Get Events with date range
+    console.log('Test 3: Fetching events with explicit date range...');
+    const toDate = new Date().toISOString();
+    const fromDate = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
+    console.log(`Date range: ${fromDate} - ${toDate}`);
+    const eventsWithDates = await makeSeqRequest<any[]>('/api/events', {
+      fromDateUtc: fromDate,
+      toDateUtc: toDate,
+      count: '5'
+    });
+    console.log(`✓ Successfully retrieved ${eventsWithDates.length} events using date range`);
+    console.log();
+
+    // Test 4: Get Events with signal filter
     if (signals.length > 0) {
-      const signalId = signals[0].id;
-      console.log(`Test 3: Fetching events for signal ${signalId}...`);
+      const signalIds = signals.slice(0, 2).map(s => s.Id).join(',');
+      console.log(`Test 4: Fetching events for signals ${signalIds}...`);
       const signalEvents = await makeSeqRequest<any[]>('/api/events', {
-        signalId,
-        count: '5',
-        fromDateUtc: fromDate,
-        toDateUtc: toDate
+        signal: signalIds,
+        range: '1h',
+        count: '5'
       });
-      console.log(`✓ Successfully retrieved ${signalEvents.length} events for signal`);
+      console.log(`✓ Successfully retrieved ${signalEvents.length} events for signals`);
       if (signalEvents.length > 0) {
         const sampleEvent = signalEvents[0];
         console.log('Sample event with signal filter:', {

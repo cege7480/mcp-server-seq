@@ -3,8 +3,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 // Configuration and constants
-const SEQ_BASE_URL = process.env.SEQ_BASE_URL || 'http://localhost:8080';
-const SEQ_API_KEY = process.env.SEQ_API_KEY || '';
+const SEQ_BASE_URL = process.env.SEQ_BASE_URL ?? 'http://localhost:8080';
+const SEQ_API_KEY = process.env.SEQ_API_KEY ?? '';
+const MAX_EVENTS = 100;
 
 // Types for SEQ API responses
 interface Signal {
@@ -16,14 +17,7 @@ interface Signal {
   shared: boolean;
 }
 
-interface Event {
-  id: string;
-  timestamp: string;
-  level: string;
-  message: string;
-  messageTemplateTokens?: Record<string, unknown>[];
-  properties: Record<string, unknown>;
-}
+type Event = any;
 
 // Create the MCP server
 const server = new McpServer({
@@ -35,7 +29,7 @@ const server = new McpServer({
 async function makeSeqRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   const url = new URL(`${SEQ_BASE_URL}${endpoint}`);
   
-  // Add API key as query parameter if not in headers
+  // Add API key as query parameter
   url.searchParams.append('apiKey', SEQ_API_KEY);
   
   // Add additional query parameters
@@ -49,13 +43,11 @@ async function makeSeqRequest<T>(endpoint: string, params: Record<string, string
     'Accept': 'application/json',
     'X-Seq-ApiKey': SEQ_API_KEY
   };
-  
-  const response = await fetch(url.toString(), {
-    headers: headers
-  });
+
+  const response = await fetch(url.toString(), { headers });
 
   if (!response.ok) {
-    throw new Error(`SEQ API error: ${response.statusText}`);
+    throw new Error(`SEQ API error: ${response.statusText} (${response.status})`);
   }
 
   return response.json();
@@ -67,11 +59,11 @@ server.resource(
   "seq://signals",
   async () => {
     try {
-      const signals = await makeSeqRequest<Signal[]>('/api/signals');
+      const signals = await makeSeqRequest<Signal[]>('/api/signals', { shared: 'true' });
       const formattedSignals = signals.map(signal => ({
         id: signal.id,
         title: signal.title,
-        description: signal.description || 'No description provided',
+        description: signal.description ?? 'No description provided',
         shared: signal.shared,
         ownerId: signal.ownerId
       }));
@@ -127,52 +119,55 @@ server.tool(
   }
 );
 
-// Helper function to format message template tokens for better readability
-function formatMessageTemplateTokens(tokens?: Record<string, unknown>[]): string {
-  if (!tokens) return '';
-  
-  return tokens.map(token => {
-    if ('Text' in token) return String(token.Text);
-    if ('PropertyName' in token) return `{${String(token.PropertyName)}}`;
-    return '';
-  }).join('');
-}
+// Schema for time range validation
+const timeRangeSchema = z.enum(['1m', '15m', '30m', '1h', '2h', '6h', '12h', '1d', '7d', '14d', '30d']);
 
-// Tool for fetching events
+// Tool for fetching events with enhanced parameters
 server.tool(
   "get-events",
   {
-    signalId: z.string().optional(),
-    count: z.number().min(1).max(1000).optional(),
-    fromDateUtc: z.string(),
-    toDateUtc: z.string()
+    signal: z.string().optional()
+      .describe('Comma-separated list of signal IDs'),
+    filter: z.string().optional()
+      .describe('Filter expression for events'),
+    count: z.number().min(1).max(MAX_EVENTS).optional()
+      .default(MAX_EVENTS)
+      .describe(`Number of events to return (max ${MAX_EVENTS})`),
+    fromDateUtc: z.string().optional()
+      .describe('Start date/time in UTC'),
+    toDateUtc: z.string().optional()
+      .describe('End date/time in UTC'),
+    range: timeRangeSchema.optional()
+      .describe('Time range (e.g., 1m, 15m, 1h, 1d, 7d)')
   },
-  async ({ signalId, count, fromDateUtc, toDateUtc }) => {
+  async ({ signal, filter, count, fromDateUtc, toDateUtc, range }) => {
     try {
-      const params: Record<string, string> = {
-        fromDateUtc,
-        toDateUtc
-      };
+      const params: Record<string, string> = {};
+      
+      // Handle date range parameters
+      if (range) {
+        // If range is provided, it takes precedence over fromDateUtc/toDateUtc
+        params.range = range;
+      } else if (fromDateUtc || toDateUtc) {
+        // Only add date parameters if they're provided
+        if (fromDateUtc) params.fromDateUtc = fromDateUtc;
+        if (toDateUtc) params.toDateUtc = toDateUtc;
+      } else {
+        // Default to last hour if no time parameters provided
+        params.range = '1h';
+      }
 
-      if (signalId) params.signalId = signalId;
+      // Add other optional parameters
+      if (signal) params.signal = signal;
+      if (filter) params.filter = filter;
       if (count) params.count = count.toString();
 
       const events = await makeSeqRequest<Event[]>('/api/events', params);
       
-      // Format events for better readability
-      const formattedEvents = events.map(event => ({
-        timestamp: event.timestamp,
-        level: event.level,
-        message: event.message,
-        messageTemplate: formatMessageTemplateTokens(event.messageTemplateTokens),
-        messageTemplateTokens: event.messageTemplateTokens,
-        properties: event.properties
-      }));
-
       return {
         content: [{
           type: "text",
-          text: JSON.stringify(formattedEvents, null, 2)
+          text: JSON.stringify(events, null, 2)
         }]
       };
     } catch (error) {
@@ -189,7 +184,6 @@ server.tool(
 );
 
 // Start the server with stdio transport
-// Check if this is the main module
 if (import.meta.url === `file://${process.argv[1]}`) {
   const transport = new StdioServerTransport();
   server.connect(transport).catch(error => {
