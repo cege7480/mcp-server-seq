@@ -3,8 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 // Configuration and constants
-const SEQ_BASE_URL = process.env.SEQ_BASE_URL ?? 'http://localhost:8080';
-const SEQ_API_KEY = process.env.SEQ_API_KEY ?? '';
+const SEQ_BASE_URL = process.env.SEQ_BASE_URL || 'http://localhost:8080';
+const SEQ_API_KEY = process.env.SEQ_API_KEY || '';
 const MAX_EVENTS = 100;
 
 // Types for SEQ API responses
@@ -63,7 +63,7 @@ server.resource(
       const formattedSignals = signals.map(signal => ({
         id: signal.id,
         title: signal.title,
-        description: signal.description ?? 'No description provided',
+        description: signal.description || 'No description provided',
         shared: signal.shared,
         ownerId: signal.ownerId
       }));
@@ -176,6 +176,34 @@ server.tool(
         content: [{
           type: "text",
           text: `Error fetching events: ${err.message}`
+        }],
+        isError: true
+      };
+    }
+  }
+);
+
+
+// Tool for fetching alert state
+server.tool(
+  "get-alertstate",
+  {},
+  async () => {
+    try {
+      const alertState = await makeSeqRequest<any>('/api/alertstate');
+      
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify(alertState, null, 2)
+        }]
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        content: [{
+          type: "text",
+          text: `Error fetching alert state: ${err.message}`
         }],
         isError: true
       };
