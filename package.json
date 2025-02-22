@@ -1,7 +1,7 @@
 {
   "name": "mcp-seq",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "This is a MCP server for SEQ from Datalust. You can use this with Claude.ai desktop and get some insights with natural language from your SEQ server",
   "type": "module",
   "main": "index.js",
   "scripts": {
