@@ -1,0 +1,38 @@
+name: Publish to NPM
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., patch, minor, major, or specific version)'
+        required: true
+        default: 'patch'
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Version and publish
+        run: |
+          if [[ "${{ github.event.inputs.version }}" =~ ^(patch|minor|major)$ ]]; then
+            npm version ${{ github.event.inputs.version }}
+          else
+            npm version ${{ github.event.inputs.version }} --allow-same-version
+          fi
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
