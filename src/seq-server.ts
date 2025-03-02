@@ -59,6 +59,9 @@ async function makeSeqRequest<T>(endpoint: string, params: Record<string, string
 server.resource(
   "signals",
   "seq://signals",
+  {
+    description: "List of saved Seq signals that can be used with the get-events tool to filter log events"
+  },
   async () => {
     try {
       const signals = await makeSeqRequest<Signal[]>('/api/signals', { shared: 'true' });
@@ -87,9 +90,12 @@ server.resource(
 server.tool(
   "get-signals",
   {
-    ownerId: z.string().optional(),
-    shared: z.boolean().optional(),
+    ownerId: z.string().optional()
+      .describe('Owner ID to filter signals by'),
+    shared: z.boolean().optional()
+      .describe('Whether to include only shared signals (true) or private signals (false)'),
     partial: z.boolean().optional()
+      .describe('Whether to include partial signal matches')
   },
   async ({ ownerId, shared, partial }) => {
     try {
@@ -127,6 +133,12 @@ const timeRangeSchema = z.enum(['1m', '15m', '30m', '1h', '2h', '6h', '12h', '1d
 // Tool for fetching events with enhanced parameters
 server.tool(
   "get-events",
+  `Retrieve and analyze a list of event filtered by parameters. Use this tool when you need to:
+  - Investigate events that are being logged in the SEQ server
+  - Details of each event is a structured log and can provide usefull information
+  - Events could be information, error, debug, or critical
+  - Analyze error patterns and frequencies  
+  `,
   {
     signal: z.string().optional()
       .describe('Comma-separated list of signal IDs'),
