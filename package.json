@@ -1,6 +1,6 @@
 {
   "name": "mcp-seq",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "MCP Server for Seq's API endpoints",
   "type": "module",
   "main": "build/seq-server.js",
@@ -19,7 +19,7 @@
     "claude"
   ],
   "author": "Ahmad Atighechi",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.4.1",
     "dotenv": "^16.3.1",
@@ -36,7 +36,8 @@
   },
   "files": [
     "build",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=16.0.0"
