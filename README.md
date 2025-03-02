@@ -100,6 +100,8 @@ The `get-events` tool supports the following time range options:
 
 ## Installation
 
+This tool is still in development and we havn't pushed to the npm repository. You need to clone this repository on your local then build `npm run build`
+
 To use with Claude Desktop, add the server config:
 
 On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -109,7 +111,8 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 {
   "mcpServers": {
     "seq": {
-      "command": "/path/to/seq-server/build/seq-server.js",
+      "command":"node",
+      "args": ["/Users/ahmadreza/source/ahmad2x4/mcp-server-seq/build/seq-server.js"],
       "env": {
         "SEQ_BASE_URL": "your-seq-url",
         "SEQ_API_KEY": "your-api-key"
@@ -126,10 +129,11 @@ Since MCP servers communicate over stdio, debugging can be challenging. The serv
 ```bash
 npm run test-script
 ```
-
 ## Type Safety
 
 The server implements comprehensive type safety using:
 - TypeScript for static type checking
 - Zod schema validation for runtime type checking
 - Proper error handling and response formatting
+=======
+
