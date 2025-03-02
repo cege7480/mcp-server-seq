@@ -214,12 +214,21 @@ server.tool(
 );
 
 // Start the server with stdio transport
-if (import.meta.url === `file://${process.argv[1]}`) {
+async function runServer() {
   const transport = new StdioServerTransport();
-  server.connect(transport).catch(error => {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  });
+  await server.connect(transport);
 }
+
+// Always run the server when this file is executed directly
+runServer().catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});
+
+// Handle stdin close gracefully
+process.stdin.on("close", () => {
+  console.error("Seq MCP Server closed");
+  server.close();
+});
 
 export default server;
