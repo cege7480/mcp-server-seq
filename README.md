@@ -2,6 +2,8 @@
 
 MCP Server for Seq's API endpoints for interacting with your logging and monitoring system. This server provides comprehensive access to Seq's API features through the Model Context Protocol.
 
+<a href="https://glama.ai/mcp/servers/yljb00fc2g"><img width="380" height="200" src="https://glama.ai/mcp/servers/yljb00fc2g/badge" alt="Seq Server MCP server" /></a>
+
 ## Features
 
 ### Tools
@@ -127,3 +129,11 @@ Since MCP servers communicate over stdio, debugging can be challenging. The serv
 ```bash
 npm run test-script
 ```
+## Type Safety
+
+The server implements comprehensive type safety using:
+- TypeScript for static type checking
+- Zod schema validation for runtime type checking
+- Proper error handling and response formatting
+=======
+
