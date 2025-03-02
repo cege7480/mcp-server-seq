@@ -2,6 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import 'dotenv/config';
 
 // Configuration and constants
 const SEQ_BASE_URL = process.env.SEQ_BASE_URL || 'http://localhost:8080';
