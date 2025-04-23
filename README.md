@@ -135,5 +135,21 @@ The server implements comprehensive type safety using:
 - TypeScript for static type checking
 - Zod schema validation for runtime type checking
 - Proper error handling and response formatting
-=======
 
+## Docker
+
+### Building the Docker Image
+
+To build the Docker image for the MCP server, run the following command in the root of the repository:
+
+```bash
+docker build -t mcp-seq .
+```
+
+### Running the Docker Container
+
+To run the Docker container, use the following command:
+
+```bash
+docker run -e SEQ_API_KEY=your-api-key -p 8080:8080 mcp-seq
+```
